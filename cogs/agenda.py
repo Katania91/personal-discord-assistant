@@ -249,6 +249,9 @@ class Agenda(commands.Cog):
 
     async def daily_reminder(self):
         logger.info(f"Running daily midnight reminder check...")
+        if config.OWNER_ID <= 0:
+            logger.warning("OWNER_ID not configured. Skipping daily reminder dispatch.")
+            return
         today_date = datetime.datetime.now().date()
         events = storage.load_events()
         todays_events = [e for e in events if e['datetime_evento'].date() == today_date and e['user_id'] == config.OWNER_ID]
@@ -264,8 +267,11 @@ class Agenda(commands.Cog):
         try:
             user = await self.bot.fetch_user(config.OWNER_ID)
             await user.send(message)
-            channel = await self.bot.fetch_channel(config.REMINDER_CHANNEL_ID)
-            await channel.send(message)
+            if config.REMINDER_CHANNEL_ID > 0:
+                channel = await self.bot.fetch_channel(config.REMINDER_CHANNEL_ID)
+                await channel.send(message)
+            else:
+                logger.info("REMINDER_CHANNEL_ID not configured. Sent only DM notification.")
         except Exception as e:
             logger.exception(f"Error sending daily reminder: {e}")
 
